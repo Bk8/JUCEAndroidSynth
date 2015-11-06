@@ -46,18 +46,19 @@ MainContentComponent::~MainContentComponent()
 //==============================================================================
 void MainContentComponent::initialiseAudio()
 {
-    // TODO add more voices
     AudioFormatManager fm;
     fm.registerBasicFormats();
     
     MemoryInputStream* soundBuffer = new MemoryInputStream (BinaryData::singing_ogg, BinaryData::singing_oggSize, false);
     ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("ogg")->createReaderFor (soundBuffer, true));
+    
     BigInteger midiNotes;
     midiNotes.setRange (0, 126, true);
     sound = new SamplerSound ("Voice", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
     
     synth.addVoice (new SamplerVoice());
     synth.addSound (sound);
+    // TODO: add more voices
     
     String err = deviceManager.initialiseWithDefaultDevices (1, 1);
     jassert (err.isEmpty());
