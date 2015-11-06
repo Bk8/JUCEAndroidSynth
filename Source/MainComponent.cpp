@@ -22,8 +22,6 @@ MainContentComponent::MainContentComponent()
       isRecording (false),
       currentRecording (1, 1)
 {
-    initialiseAudio();
-    
     keyboard.setLowestVisibleKey (0x30);
     keyboard.setKeyWidth (600/0x10);
     addAndMakeVisible (keyboard);
@@ -35,11 +33,8 @@ MainContentComponent::MainContentComponent()
     addAndMakeVisible (stopButton);
     
     setSize (600, 400);
-
-    String err = deviceManager.initialiseWithDefaultDevices (1, 1);
-    jassert (err.isEmpty());
-
-    deviceManager.addAudioCallback (this);
+    
+    initialiseAudio();
 }
 
 //==============================================================================
@@ -63,7 +58,11 @@ void MainContentComponent::initialiseAudio()
     
     synth.addVoice (new SamplerVoice());
     synth.addSound (sound);
-
+    
+    String err = deviceManager.initialiseWithDefaultDevices (1, 1);
+    jassert (err.isEmpty());
+    
+    deviceManager.addAudioCallback (this);
 }
 
 //==============================================================================
