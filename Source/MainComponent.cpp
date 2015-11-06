@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    This file was auto-generated!
+    Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -28,12 +28,12 @@ MainContentComponent::MainContentComponent()
 
     recordButton.addListener (this);
     addAndMakeVisible (recordButton);
-    
+
     stopButton.addListener (this);
     addAndMakeVisible (stopButton);
-    
+
     setSize (600, 400);
-    
+
     initialiseAudio();
 }
 
@@ -48,21 +48,21 @@ void MainContentComponent::initialiseAudio()
 {
     AudioFormatManager fm;
     fm.registerBasicFormats();
-    
+
     MemoryInputStream* soundBuffer = new MemoryInputStream (BinaryData::singing_ogg, BinaryData::singing_oggSize, false);
     ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("ogg")->createReaderFor (soundBuffer, true));
-    
+
     BigInteger midiNotes;
     midiNotes.setRange (0, 126, true);
     sound = new SamplerSound ("Voice", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
-    
+
     synth.addVoice (new SamplerVoice());
     synth.addSound (sound);
     // TODO: add more voices
-    
+
     String err = deviceManager.initialiseWithDefaultDevices (1, 1);
     jassert (err.isEmpty());
-    
+
     deviceManager.addAudioCallback (this);
 }
 
@@ -77,7 +77,7 @@ void MainContentComponent::resized()
 {
     const int buttonWidth = 150;
     const int buttonHeight = 50;
-    
+
     Rectangle<int> r = getLocalBounds();
     keyboard.setBounds (r.removeFromBottom (proportionOfHeight (0.5)));
     recordButton.setBounds (r.removeFromLeft (proportionOfWidth (0.5)).withSizeKeepingCentre (buttonWidth, buttonHeight));
@@ -107,7 +107,7 @@ void MainContentComponent::recordButtonClicked()
 //==============================================================================
 void MainContentComponent::stopButtonClicked()
 {
-    // TODO
+    isRecording = false;
 }
 
 //==============================================================================
@@ -131,11 +131,11 @@ void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData
             MessageManager::callAsync ([this] { playNewSample(); });
         }
     }
-    
+
     keyboardState.processNextMidiBuffer (midiBuffer, 0, numSamples, true);
 
     buffer.clear();
-    synth.renderNextBlock (buffer, midiBuffer, 0, numSamples);                           
+    synth.renderNextBlock (buffer, midiBuffer, 0, numSamples);
 }
 
 //==============================================================================
@@ -163,9 +163,9 @@ void MainContentComponent::playNewSample()
     }
 
     MemoryInputStream* soundBuffer = new MemoryInputStream (mb, false);
-    ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("wav")->createReaderFor (soundBuffer, true));    
+    ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("wav")->createReaderFor (soundBuffer, true));
     BigInteger midiNotes;
-    midiNotes.setRange (0, 126, true);    
+    midiNotes.setRange (0, 126, true);
     SynthesiserSound::Ptr newSound = new SamplerSound ("UserRecording", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
 
     synth.removeSound (0);

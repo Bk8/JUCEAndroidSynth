@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    This file was auto-generated!
+    Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -11,18 +11,13 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-
 //==============================================================================
-/*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
-*/
 class MainContentComponent   : public Component,
                                public AudioIODeviceCallback,
                                public ButtonListener
 {
 public:
-    //==============================================================================
+    //==========================================================================
     MainContentComponent();
     ~MainContentComponent();
 
@@ -30,7 +25,7 @@ public:
     void resized() override;
     void buttonClicked (Button* buttonThatWasClicked) override;
 
-    //==============================================================================
+    //==========================================================================
     void audioDeviceIOCallback (const float** inputChannelData,
                                 int numInputChannels,
                                 float** outputChannelData,
@@ -40,18 +35,18 @@ public:
     void audioDeviceStopped() override {}
 
     void playNewSample();
-    
+
 
 private:
-    //==============================================================================
+    //==========================================================================
     void initialiseAudio();
     void recordButtonClicked();
     void stopButtonClicked();
-    
+
     static double kMaxDurationOfRecording;
-    
+
     AudioDeviceManager deviceManager;
-    
+
     MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboard;
     Synthesiser synth;
@@ -63,7 +58,7 @@ private:
     double lastSampleRate;
     AudioBuffer<float> currentRecording;
 
-    //==============================================================================
+    //==========================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
 
