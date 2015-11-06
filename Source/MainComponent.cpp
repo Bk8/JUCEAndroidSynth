@@ -14,6 +14,7 @@
 //==============================================================================
 double MainContentComponent::kMaxDurationOfRecording = 1.0f;
 
+//==============================================================================
 MainContentComponent::MainContentComponent()
     : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
       recordButton ("Record"),
@@ -21,21 +22,8 @@ MainContentComponent::MainContentComponent()
       isRecording (false),
       currentRecording (1, 1)
 {
-    // TODO add more voices
-    {
-        AudioFormatManager fm;
-        fm.registerBasicFormats();
-        
-        MemoryInputStream* soundBuffer = new MemoryInputStream (BinaryData::singing_ogg, BinaryData::singing_oggSize, false);
-        ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("ogg")->createReaderFor (soundBuffer, true));
-        BigInteger midiNotes;
-        midiNotes.setRange (0, 126, true);
-        sound = new SamplerSound ("Voice", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
-    }
+    initialiseAudio();
     
-    synth.addVoice (new SamplerVoice());
-    synth.addSound (sound);
-
     keyboard.setLowestVisibleKey (0x30);
     keyboard.setKeyWidth (600/0x10);
     addAndMakeVisible (keyboard);
@@ -54,16 +42,37 @@ MainContentComponent::MainContentComponent()
     deviceManager.addAudioCallback (this);
 }
 
+//==============================================================================
 MainContentComponent::~MainContentComponent()
 {
     deviceManager.removeAudioCallback (this);
 }
 
+//==============================================================================
+void MainContentComponent::initialiseAudio()
+{
+    // TODO add more voices
+    AudioFormatManager fm;
+    fm.registerBasicFormats();
+    
+    MemoryInputStream* soundBuffer = new MemoryInputStream (BinaryData::singing_ogg, BinaryData::singing_oggSize, false);
+    ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("ogg")->createReaderFor (soundBuffer, true));
+    BigInteger midiNotes;
+    midiNotes.setRange (0, 126, true);
+    sound = new SamplerSound ("Voice", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
+    
+    synth.addVoice (new SamplerVoice());
+    synth.addSound (sound);
+
+}
+
+//==============================================================================
 void MainContentComponent::paint (Graphics& g)
 {
     g.fillAll (Colours::white);
 }
 
+//==============================================================================
 void MainContentComponent::resized()
 {
     const int buttonWidth = 150;
@@ -75,9 +84,19 @@ void MainContentComponent::resized()
     stopButton.setBounds (r.withSizeKeepingCentre (buttonWidth, buttonHeight));
 }
 
-void MainContentComponent::buttonClicked (Button* buttonThatWasClicked)
+//==============================================================================
+void MainContentComponent::buttonClicked (Button* button)
 {
-    if (buttonThatWasClicked == &recordButton && !isRecording)
+    if (button)
+        recordButtonClicked();
+    else if (button == &stopButton)
+        stopButtonClicked();
+}
+
+//==============================================================================
+void MainContentComponent::recordButtonClicked()
+{
+    if (! isRecording)
     {
         samplesRecorded = 0;
         currentRecording.clear();
@@ -85,6 +104,13 @@ void MainContentComponent::buttonClicked (Button* buttonThatWasClicked)
     }
 }
 
+//==============================================================================
+void MainContentComponent::stopButtonClicked()
+{
+    // TODO
+}
+
+//==============================================================================
 void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData,
                                                   int numInputChannels,
                                                   float** outputChannelData,
@@ -112,6 +138,7 @@ void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData
     synth.renderNextBlock (buffer, midiBuffer, 0, numSamples);                           
 }
 
+//==============================================================================
 void MainContentComponent::audioDeviceAboutToStart (AudioIODevice* device)
 {
     lastSampleRate = device->getCurrentSampleRate();
@@ -119,11 +146,7 @@ void MainContentComponent::audioDeviceAboutToStart (AudioIODevice* device)
     synth.setCurrentPlaybackSampleRate (device->getCurrentSampleRate());
 }
 
-void MainContentComponent::audioDeviceStopped()
-{
-    
-}
-
+//==============================================================================
 void MainContentComponent::playNewSample()
 {
     MemoryBlock mb;

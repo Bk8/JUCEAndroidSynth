@@ -37,13 +37,17 @@ public:
                                 int numOutputChannels,
                                 int numSamples) override;
     void audioDeviceAboutToStart (AudioIODevice* device) override;
-    void audioDeviceStopped() override;
+    void audioDeviceStopped() override {}
 
     void playNewSample();
     
 
 private:
     //==============================================================================
+    void initialiseAudio();
+    void recordButtonClicked();
+    void stopButtonClicked();
+    
     static double kMaxDurationOfRecording;
     
     AudioDeviceManager deviceManager;
