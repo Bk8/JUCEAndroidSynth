@@ -95,7 +95,6 @@ void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData
         if (samplesRecorded >= currentRecording.getNumSamples())
         {
             isRecording = false;
-
             MessageManager::callAsync ([this] { playNewSample(); });
         }
     }
@@ -124,9 +123,22 @@ void MainContentComponent::playNewSample()
     MemoryOutputStream* stream = new MemoryOutputStream (mb, true);
     AudioFormatManager fm;
 
+    fm.registerBasicFormats();
     StringPairArray empty;
-    ScopedPointer<AudioFormatWriter> writer (fm.findFormatForFileExtension ("ogg")->createWriterFor (stream, lastSampleRate, 1, 16, empty, 0));
-    
-    
+    {
+        ScopedPointer<AudioFormatWriter> writer (fm.findFormatForFileExtension ("wav")->createWriterFor (stream, lastSampleRate, 1, 16, empty, 0));
+        writer->writeFromAudioSampleBuffer (currentRecording, 0, currentRecording.getNumSamples());
+        writer->flush();
+        stream->flush();
+    }
+
+    MemoryInputStream* soundBuffer = new MemoryInputStream (mb, false);
+    ScopedPointer<AudioFormatReader> formatReader (fm.findFormatForFileExtension ("wav")->createReaderFor (soundBuffer, true));    
+    BigInteger midiNotes;
+    midiNotes.setRange (0, 126, true);    
     SynthesiserSound::Ptr newSound = new SamplerSound ("UserRecording", *formatReader, midiNotes, 0x40, 0.0, 0.0, 10.0);
+
+    synth.removeSound (0);
+    sound = newSound;
+    synth.addSound (newSound);
 }
