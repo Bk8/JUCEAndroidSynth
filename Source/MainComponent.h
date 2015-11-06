@@ -53,7 +53,7 @@ private:
     Synthesiser synth;
     SynthesiserSound::Ptr sound;
 
-    TextButton recordButton;
+    TextButton recordButton, stopButton;
     bool isRecording;
     int samplesRecorded;
     double lastSampleRate;

@@ -17,6 +17,7 @@ double MainContentComponent::kMaxDurationOfRecording = 1.0f;
 MainContentComponent::MainContentComponent()
     : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
       recordButton ("Record"),
+      stopButton ("Stop"),
       isRecording (false),
       currentRecording (1, 1)
 {
@@ -42,6 +43,9 @@ MainContentComponent::MainContentComponent()
     recordButton.addListener (this);
     addAndMakeVisible (recordButton);
     
+    stopButton.addListener (this);
+    addAndMakeVisible (stopButton);
+    
     setSize (600, 400);
 
     String err = deviceManager.initialiseWithDefaultDevices (1, 1);
@@ -62,10 +66,13 @@ void MainContentComponent::paint (Graphics& g)
 
 void MainContentComponent::resized()
 {
+    const int buttonWidth = 150;
+    const int buttonHeight = 50;
+    
     Rectangle<int> r = getLocalBounds();
-
-    recordButton.setBounds (r.removeFromTop (24));
-    keyboard.setBounds (r.withTrimmedTop(r.getHeight() / 2));
+    keyboard.setBounds (r.removeFromBottom (proportionOfHeight (0.5)));
+    recordButton.setBounds (r.removeFromLeft (proportionOfWidth (0.5)).withSizeKeepingCentre (buttonWidth, buttonHeight));
+    stopButton.setBounds (r.withSizeKeepingCentre (buttonWidth, buttonHeight));
 }
 
 void MainContentComponent::buttonClicked (Button* buttonThatWasClicked)
