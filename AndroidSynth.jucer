@@ -8,7 +8,10 @@
       <GROUP id="{C02B0FD5-71E7-BD39-EB61-B15EEF602B36}" name="BinaryData">
         <FILE id="Xgq2Qo" name="power.png" compile="0" resource="0" file="Source/BinaryData/power.png"/>
         <FILE id="mqLo46" name="proaudio.path" compile="0" resource="1" file="Source/BinaryData/proaudio.path"/>
+        <FILE id="YrBN5Z" name="singing.ogg" compile="0" resource="1" file="Source/BinaryData/singing.ogg"/>
       </GROUP>
+      <FILE id="kpf8X8" name="AndroidSynthProcessor.h" compile="0" resource="0"
+            file="Source/AndroidSynthProcessor.h"/>
       <FILE id="eVTEF0" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="faSMYf" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
     </GROUP>

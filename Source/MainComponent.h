@@ -10,6 +10,7 @@
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "AndroidSynthProcessor.h"
 
 //==============================================================================
 class MainContentComponent   : public Component,
@@ -19,11 +20,15 @@ class MainContentComponent   : public Component,
 {
 public:
     //==========================================================================
-    MainContentComponent ()
-        : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
-          recordButton ("Record"),
-          roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
+    MainContentComponent (AndroidSynthProcessor& androidSynth)
+        :   synth (androidSynth),
+            keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+            recordButton ("Record"),
+            roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
     {
+        synth.addChangeListener (this);
+        roomSizeSlider.setValue (synth.reverbParameters.roomSize, NotificationType::dontSendNotification);
+
         keyboard.setLowestVisibleKey (0x30);
         keyboard.setKeyWidth (600/0x10);
         addAndMakeVisible (keyboard);
@@ -48,6 +53,7 @@ public:
 
     ~MainContentComponent()
     {
+        synth.removeChangeListener (this);
     }
 
     //==========================================================================
@@ -82,21 +88,26 @@ public:
     {
         if (button == &recordButton)
         {
-            // ....
+            recordButton.setEnabled (false);
+            synth.startRecording();
         }
     }
 
     void sliderValueChanged (Slider*) override
     {
+        synth.reverbParameters.roomSize = roomSizeSlider.getValue();
     }
 
     //==========================================================================
     void changeListenerCallback (ChangeBroadcaster*) override
     {
+        recordButton.setEnabled (! synth.isRecording);
     }
 private:
     //==========================================================================
-    MidiKeyboardState keyboardState;
+    AndroidSynthProcessor& synth;
+
+    //==========================================================================
     MidiKeyboardComponent keyboard;
     TextButton recordButton, bluetoothButton;
     Slider roomSizeSlider;

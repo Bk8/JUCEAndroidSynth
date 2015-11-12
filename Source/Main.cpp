@@ -8,6 +8,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MainComponent.h"
+#include "AndroidSynthProcessor.h"
 
 //==============================================================================
 class AndroidSynthApplication  : public  JUCEApplication
@@ -25,7 +26,16 @@ public:
     {
         ignoreUnused (commandLine);
 
-        mainWindow = new MainWindow (getApplicationName());
+        player.setProcessor (&synthProcessor);
+
+        deviceManager = new AudioDeviceManager();
+        String err = deviceManager->initialiseWithDefaultDevices (1, 1);
+        jassert (err.isEmpty());
+
+        deviceManager->addAudioCallback (&player);
+        deviceManager->addMidiInputCallback (String(), &player);
+
+        mainWindow = new MainWindow (synthProcessor, getApplicationName());
     }
 
     void shutdown() override
@@ -48,14 +58,14 @@ public:
     class MainWindow    : public DocumentWindow
     {
     public:
-        MainWindow (String name)  : DocumentWindow (name,
+        MainWindow (AndroidSynthProcessor& synth, String name)  : DocumentWindow (name,
                                                     LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
 
             setUsingNativeTitleBar (true);
-            setContentOwned (comp = new MainContentComponent(), true);
+            setContentOwned (comp = new MainContentComponent (synth), true);
 
            #if JUCE_ANDROID
             setFullScreen (true);
@@ -80,6 +90,11 @@ public:
     };
 
 private:
+    //==============================================================================
+    AndroidSynthProcessor synthProcessor;
+    AudioProcessorPlayer player;
+    ScopedPointer<AudioDeviceManager> deviceManager;
+
     //==============================================================================
     ScopedPointer<MainWindow> mainWindow;
 };
