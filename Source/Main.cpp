@@ -28,6 +28,8 @@ public:
     {
         ignoreUnused (commandLine);
 
+        Desktop::getInstance().setScreenSaverEnabled (false);
+        
         player.setProcessor (&synthProcessor);
 
         deviceManager = new AudioDeviceManager();
