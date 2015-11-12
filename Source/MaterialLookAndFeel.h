@@ -19,7 +19,7 @@ public:
         setColour (TextButton::buttonOnColourId, brightButtonColour);
         setColour (TextButton::buttonColourId, disabledButtonColour);
     }
-    
+
     //==========================================================================
     void drawButtonBackground (Graphics& g,
                                Button& button,
@@ -28,7 +28,7 @@ public:
                                bool isButtonDown) override
     {
         ignoreUnused (isMouseOverButton);
-        
+
         const int width = button.getWidth();
         const int height = button.getHeight();
 
@@ -49,15 +49,15 @@ public:
     void drawButtonText (Graphics& g, TextButton& button, bool isMouseOverButton, bool isButtonDown) override
     {
         ignoreUnused (isMouseOverButton, isButtonDown);
-        
+
         Font font (getTextButtonFont (button, button.getHeight()));
         g.setFont (font);
-        
+
         if (button.isEnabled())
             g.setColour (Colours::white);
         else
             g.setColour (backgroundColour);
-        
+
         g.drawFittedText (button.getButtonText(), 0, 1,
                           button.getWidth(),
                           button.getHeight(),
@@ -77,7 +77,7 @@ public:
         sliderPos = (sliderPos - minSliderPos) / static_cast<float> (width);
 
         int knobPos = static_cast<int> (sliderPos * r.getWidth());
-        
+
         g.setColour (sliderActivePart);
         g.fillRect (backgroundBar.removeFromLeft (knobPos));
 
@@ -89,7 +89,7 @@ public:
             Rectangle<int> haloBounds = r.withTrimmedLeft (knobPos - haloRadius)
                                          .withWidth (haloRadius*2)
                                          .withSizeKeepingCentre(haloRadius*2, haloRadius*2);
-            
+
             g.setColour (sliderActivePart.withAlpha (0.5f));
             g.fillEllipse (haloBounds.toFloat());
         }
@@ -131,5 +131,3 @@ public:
     const Colour sliderInactivePart = Colour (0xff545d62);
     const Colour sliderActivePart = Colour (0xff80cbc4);
 };
-
-

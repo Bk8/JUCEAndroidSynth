@@ -10,76 +10,117 @@
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "AndroidSynthProcessor.h"
 
 //==============================================================================
 class MainContentComponent   : public Component,
-                               public AudioIODeviceCallback,
-                               public MidiInputCallback,
+                               public ChangeListener,
                                public ButtonListener,
-                               public Slider::Listener,
-                               private Timer
+                               public Slider::Listener
 {
 public:
     //==========================================================================
-    MainContentComponent();
-    ~MainContentComponent();
+    MainContentComponent (AndroidSynthProcessor& androidSynth, bool lowLatencyAudio)
+        : synth (androidSynth),
+          keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+          recordButton ("Record"),
+          bluetoothButton ("Bluetooth MIDI"),
+          roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
+    {
+        synth.addChangeListener (this);
 
-    void paint (Graphics&) override;
-    void resized() override;
-    void buttonClicked (Button* buttonThatWasClicked) override;
-    void sliderValueChanged (Slider* slider) override;
+        keyboard.setLowestVisibleKey (0x30);
+        keyboard.setKeyWidth (600/0x10);
+        addAndMakeVisible (keyboard);
+
+        recordButton.addListener (this);
+        addAndMakeVisible (recordButton);
+
+        roomSizeSlider.addListener (this);
+        roomSizeSlider.setRange (0.0, 1.0);
+        roomSizeSlider.setValue (synth.reverbParameters.roomSize, NotificationType::dontSendNotification);
+        addAndMakeVisible (roomSizeSlider);
+
+        if (! BluetoothMidiDevicePairingDialogue::isAvailable())
+            bluetoothButton.setEnabled (false);
+
+        bluetoothButton.addListener (this);
+        addAndMakeVisible (bluetoothButton);
+
+        Path proAudioPath;
+        proAudioPath.loadPathFromData (BinaryData::proaudio_path, BinaryData::proaudio_pathSize);
+        proAudioIcon.setPath (proAudioPath);
+        addAndMakeVisible (proAudioIcon);
+
+        Colour proAudioIconColour = findColour (lowLatencyAudio ? TextButton::buttonOnColourId : TextButton::buttonColourId);
+        proAudioIcon.setFill (FillType (proAudioIconColour));
+
+        setSize (600, 400);
+    }
+
+    ~MainContentComponent()
+    {
+        synth.removeChangeListener (this);
+    }
 
     //==========================================================================
-    void audioDeviceIOCallback (const float** inputChannelData,
-                                int numInputChannels,
-                                float** outputChannelData,
-                                int numOutputChannels,
-                                int numSamples) override;
-    void audioDeviceAboutToStart (AudioIODevice* device) override;
-    void audioDeviceStopped() override {}
+    void paint (Graphics& g) override
+    {
+        g.fillAll (findColour (ResizableWindow::backgroundColourId));
+    }
+
+    void resized() override
+    {
+        Rectangle<int> r = getLocalBounds();
+        keyboard.setBounds (r.removeFromBottom (proportionOfHeight (0.5)));
+
+        int guiElementAreaHeight = r.getHeight() / 3;
+
+        proAudioIcon.setTransformToFit (r.removeFromLeft (proportionOfWidth (0.25))
+                                        .withSizeKeepingCentre (guiElementAreaHeight, guiElementAreaHeight)
+                                        .toFloat(),
+                                        RectanglePlacement::fillDestination);
+
+        int margin = guiElementAreaHeight / 4;
+        r.reduce (margin, margin);
+
+        int buttonHeight = guiElementAreaHeight - margin;
+
+        recordButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+        bluetoothButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+        roomSizeSlider.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+    }
 
     //==========================================================================
-    void handleIncomingMidiMessage (MidiInput* source,
-                                    const MidiMessage& message) override;
+    void buttonClicked (Button* button) override
+    {
+        if (button == &recordButton)
+        {
+            recordButton.setEnabled (false);
+            synth.startRecording();
+        }
+        else if (button == &bluetoothButton)
+            BluetoothMidiDevicePairingDialogue::open();
+    }
 
+    void sliderValueChanged (Slider*) override
+    {
+        synth.reverbParameters.roomSize = static_cast<float> (roomSizeSlider.getValue());
+    }
+
+    //==========================================================================
+    void changeListenerCallback (ChangeBroadcaster*) override
+    {
+        recordButton.setEnabled (! synth.isRecording);
+    }
 private:
-    static constexpr int maxNumVoices = 5;
-
     //==========================================================================
-    void initialiseAudio();
-    void playNewSample();
-    void loadNewSample (const void* data, int dataSize, const char* format);
-    void recordButtonClicked();
+    AndroidSynthProcessor& synth;
 
-    bool isLowLatencyAudio();
-
-    //==========================================================================
-    void timerCallback() override;
-
-    static double kMaxDurationOfRecording;
-
-    AudioDeviceManager deviceManager;
-    AudioFormatManager formatManager;
-
-    MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboard;
-    Synthesiser synth;
-    SynthesiserSound::Ptr sound;
-
     TextButton recordButton, bluetoothButton;
     Slider roomSizeSlider;
     DrawablePath proAudioIcon;
-    
-    bool isRecording;
-    int samplesRecorded;
-    double lastSampleRate;
-    AudioBuffer<float> currentRecording;
-
-    Reverb reverb;
-    Reverb::Parameters reverbParameters;
-
-    MidiBuffer midiBuffer;
-    StringArray lastMidiDevices;
 
     //==========================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
