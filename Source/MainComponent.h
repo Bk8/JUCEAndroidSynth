@@ -16,6 +16,7 @@ class MainContentComponent   : public Component,
                                public AudioIODeviceCallback,
                                public MidiInputCallback,
                                public ButtonListener,
+                               public Slider::Listener,
                                private Timer
 {
 public:
@@ -26,6 +27,7 @@ public:
     void paint (Graphics&) override;
     void resized() override;
     void buttonClicked (Button* buttonThatWasClicked) override;
+    void sliderValueChanged (Slider* slider) override;
 
     //==========================================================================
     void audioDeviceIOCallback (const float** inputChannelData,
@@ -49,6 +51,8 @@ private:
     void loadNewSample (const void* data, int dataSize, const char* format);
     void recordButtonClicked();
 
+    bool isLowLatencyAudio();
+
     //==========================================================================
     void timerCallback() override;
 
@@ -63,10 +67,16 @@ private:
     SynthesiserSound::Ptr sound;
 
     TextButton recordButton, bluetoothButton;
+    Slider roomSizeSlider;
+    DrawablePath proAudioIcon;
+    
     bool isRecording;
     int samplesRecorded;
     double lastSampleRate;
     AudioBuffer<float> currentRecording;
+
+    Reverb reverb;
+    Reverb::Parameters reverbParameters;
 
     MidiBuffer midiBuffer;
     StringArray lastMidiDevices;

@@ -19,6 +19,7 @@ MainContentComponent::MainContentComponent()
     : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
       recordButton ("Record"),
       bluetoothButton ("Bluetooth MIDI"),
+      roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox),
       isRecording (false),
       currentRecording (1, 1)
 {
@@ -29,11 +30,23 @@ MainContentComponent::MainContentComponent()
     recordButton.addListener (this);
     addAndMakeVisible (recordButton);
 
+    roomSizeSlider.addListener (this);
+    roomSizeSlider.setRange (0.0, 1.0);
+    roomSizeSlider.setValue (reverbParameters.roomSize, NotificationType::dontSendNotification);
+    addAndMakeVisible (roomSizeSlider);
+
     if (! BluetoothMidiDevicePairingDialogue::isAvailable())
         bluetoothButton.setEnabled (false);
 
     bluetoothButton.addListener (this);
     addAndMakeVisible (bluetoothButton);
+
+    Path proAudioPath;
+    proAudioPath.loadPathFromData (BinaryData::proaudio_path, BinaryData::proaudio_pathSize);    
+    proAudioIcon.setPath (proAudioPath);
+    addAndMakeVisible (proAudioIcon);
+
+    proAudioIcon.setFill (FillType (findColour (TextButton::buttonColourId)));
 
     setSize (600, 400);
 
@@ -59,28 +72,57 @@ void MainContentComponent::initialiseAudio()
     String err = deviceManager.initialiseWithDefaultDevices (1, 1);
     jassert (err.isEmpty());
 
+    if (isLowLatencyAudio())
+        proAudioIcon.setFill (FillType (findColour (TextButton::buttonOnColourId)));
+
     startTimer (1000);
 
     deviceManager.addAudioCallback (this);
     deviceManager.addMidiInputCallback (String(), this);
 }
 
+bool MainContentComponent::isLowLatencyAudio()
+{
+    if (AudioIODevice* device = deviceManager.getCurrentAudioDevice())
+    {
+        Array<int> bufferSizes = device->getAvailableBufferSizes();
+        
+        DefaultElementComparator <int> comparator;        
+        bufferSizes.sort (comparator);
+
+        return (bufferSizes.size() > 0 && bufferSizes[0] == device->getDefaultBufferSize());
+    }
+
+    return false;
+}
+
 //==============================================================================
 void MainContentComponent::paint (Graphics& g)
 {
-    g.fillAll (Colours::white);
+    g.fillAll (findColour (ResizableWindow::backgroundColourId));
 }
 
 //==============================================================================
 void MainContentComponent::resized()
 {
-    const int buttonWidth = 150;
-    const int buttonHeight = 50;
-
     Rectangle<int> r = getLocalBounds();
     keyboard.setBounds (r.removeFromBottom (proportionOfHeight (0.5)));
-    recordButton.setBounds (r.removeFromLeft (proportionOfWidth (0.5)).withSizeKeepingCentre (buttonWidth, buttonHeight));
-    bluetoothButton.setBounds (r.withSizeKeepingCentre (buttonWidth, buttonHeight));
+
+    int guiElementAreaHeight = r.getHeight() / 3;
+
+    proAudioIcon.setTransformToFit (r.removeFromLeft (proportionOfWidth (0.25))
+                                      .withSizeKeepingCentre (guiElementAreaHeight, guiElementAreaHeight)
+                                      .toFloat(),
+                                    RectanglePlacement::fillDestination);
+    
+    int margin = guiElementAreaHeight / 4;
+    r.reduce (margin, margin);
+
+    int buttonHeight = guiElementAreaHeight - margin;
+
+    recordButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+    bluetoothButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+    roomSizeSlider.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
 }
 
 //==============================================================================
@@ -92,6 +134,10 @@ void MainContentComponent::buttonClicked (Button* button)
         BluetoothMidiDevicePairingDialogue::open();
 }
 
+void MainContentComponent::sliderValueChanged (Slider*)
+{
+    reverbParameters.roomSize = static_cast<float> (roomSizeSlider.getValue());
+}
 //==============================================================================
 void MainContentComponent::recordButtonClicked()
 {
@@ -131,7 +177,10 @@ void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData
     keyboardState.processNextMidiBuffer (midiBuffer, 0, numSamples, true);
     buffer.clear();
 
+    reverb.setParameters (reverbParameters);
     synth.renderNextBlock (buffer, midiBuffer, 0, numSamples);
+    reverb.processMono (buffer.getWritePointer (0), numSamples);
+    
     midiBuffer.clear();
 }
 
@@ -139,8 +188,9 @@ void MainContentComponent::audioDeviceIOCallback (const float** inputChannelData
 void MainContentComponent::audioDeviceAboutToStart (AudioIODevice* device)
 {
     lastSampleRate = device->getCurrentSampleRate();
-    currentRecording.setSize (1, static_cast<int> (std::ceil (kMaxDurationOfRecording * device->getCurrentSampleRate())));
-    synth.setCurrentPlaybackSampleRate (device->getCurrentSampleRate());
+    currentRecording.setSize (1, static_cast<int> (std::ceil (kMaxDurationOfRecording * lastSampleRate)));
+    synth.setCurrentPlaybackSampleRate (lastSampleRate);
+    reverb.setSampleRate (lastSampleRate);
 }
 
 void MainContentComponent::handleIncomingMidiMessage (MidiInput* source,

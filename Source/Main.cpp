@@ -8,7 +8,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MainComponent.h"
-
+#include "MaterialLookAndFeel.h"
 
 //==============================================================================
 class AndroidSynthApplication  : public JUCEApplication
@@ -25,6 +25,8 @@ public:
     void initialise (const String& commandLine) override
     {
         ignoreUnused (commandLine);
+
+        LookAndFeel::setDefaultLookAndFeel (&materialLf);
         mainWindow = new MainWindow (getApplicationName());
     }
 
@@ -49,7 +51,7 @@ public:
     {
     public:
         MainWindow (String name)  : DocumentWindow (name,
-                                                    Colours::lightgrey,
+                                                    LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
@@ -83,6 +85,7 @@ public:
     };
 
 private:
+    MaterialLookAndFeel materialLf;
     ScopedPointer<MainWindow> mainWindow;
 };
 
