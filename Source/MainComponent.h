@@ -20,7 +20,7 @@ class MainContentComponent   : public Component,
 {
 public:
     //==========================================================================
-    MainContentComponent (AndroidSynthProcessor& androidSynth)
+    MainContentComponent (AndroidSynthProcessor& androidSynth, bool lowLatency)
         :   synth (androidSynth),
             keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
             recordButton ("Record"), bluetoothButton ("Bluetooth"),
@@ -49,7 +49,7 @@ public:
         proAudioIcon.setPath (proAudioPath);
         addAndMakeVisible (proAudioIcon);
 
-        Colour proAudioIconColour = findColour (TextButton::buttonColourId);
+        Colour proAudioIconColour = findColour (lowLatency ? TextButton::buttonOnColourId : TextButton::buttonColourId);
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);

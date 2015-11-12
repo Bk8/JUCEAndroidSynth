@@ -36,7 +36,7 @@ public:
         deviceManager->addAudioCallback (&player);
         deviceManager->addMidiInputCallback (String(), &player);
 
-        mainWindow = new MainWindow (synthProcessor, getApplicationName());
+        mainWindow = new MainWindow (synthProcessor, isLowLatencyAudio(), getApplicationName());
 
         startTimer (1000);
     }
@@ -61,14 +61,14 @@ public:
     class MainWindow    : public DocumentWindow
     {
     public:
-        MainWindow (AndroidSynthProcessor& synth, String name)  : DocumentWindow (name,
+        MainWindow (AndroidSynthProcessor& synth, bool lowLatency, String name)  : DocumentWindow (name,
                                                     LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
 
             setUsingNativeTitleBar (true);
-            setContentOwned (comp = new MainContentComponent (synth), true);
+            setContentOwned (comp = new MainContentComponent (synth, lowLatency), true);
 
            #if JUCE_ANDROID
             setFullScreen (true);
@@ -107,6 +107,21 @@ private:
                 deviceManager->setMidiInputEnabled (newDevices[i], true);
 
         lastMidiDevices = newDevices;
+    }
+
+    bool isLowLatencyAudio()
+    {
+        if (AudioIODevice* device = deviceManager->getCurrentAudioDevice())
+        {
+            Array<int> bufferSizes = device->getAvailableBufferSizes();
+
+            DefaultElementComparator <int> comparator;
+            bufferSizes.sort (comparator);
+
+            return (bufferSizes.size() > 0 && bufferSizes[0] == device->getDefaultBufferSize());
+        }
+
+        return false;
     }
 
     //==============================================================================
