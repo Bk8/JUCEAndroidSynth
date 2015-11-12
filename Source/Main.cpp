@@ -9,6 +9,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MainComponent.h"
 #include "AndroidSynthProcessor.h"
+#include "MaterialLookAndFeel.h"
 
 //==============================================================================
 class AndroidSynthApplication  : public  JUCEApplication,
@@ -26,6 +27,8 @@ public:
     void initialise (const String& commandLine) override
     {
         ignoreUnused (commandLine);
+
+        LookAndFeel::setDefaultLookAndFeel (&materialLf);
 
         player.setProcessor (&synthProcessor);
 
@@ -137,6 +140,7 @@ private:
     StringArray lastMidiDevices;
 
     //==============================================================================
+    MaterialLookAndFeel materialLf;
     ScopedPointer<MainWindow> mainWindow;
 };
 
