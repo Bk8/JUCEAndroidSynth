@@ -13,6 +13,7 @@
 
 //==============================================================================
 class MainContentComponent   : public Component,
+                               public ChangeListener,
                                public ButtonListener,
                                public Slider::Listener
 {
@@ -89,6 +90,10 @@ public:
     {
     }
 
+    //==========================================================================
+    void changeListenerCallback (ChangeBroadcaster*) override
+    {
+    }
 private:
     //==========================================================================
     MidiKeyboardState keyboardState;
