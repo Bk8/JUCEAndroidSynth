@@ -6,6 +6,7 @@
   <MAINGROUP id="DvxWFd" name="AndroidSynth">
     <GROUP id="{6E63EE35-FE78-9B93-734E-698B8B2A7530}" name="Source">
       <GROUP id="{C02B0FD5-71E7-BD39-EB61-B15EEF602B36}" name="BinaryData">
+        <FILE id="Xgq2Qo" name="power.png" compile="0" resource="0" file="Source/BinaryData/power.png"/>
         <FILE id="LP530l" name="proaudio.path" compile="0" resource="1" file="Source/BinaryData/proaudio.path"/>
         <FILE id="H3wY8j" name="singing.ogg" compile="0" resource="1" file="Source/BinaryData/singing.ogg"/>
       </GROUP>
@@ -21,7 +22,7 @@
                    androidKeyStorePass="android" androidKeyAlias="androiddebugkey"
                    androidKeyAliasPass="android" androidCpp11="1" targetFolder="Builds/AndroidStudio"
                    androidSDKPath="" androidNDKPath="" androidMicNeeded="1" androidBluetoothNeeded="1"
-                   androidTheme="@android:style/Theme.NoTitleBar">
+                   androidTheme="@android:style/Theme.NoTitleBar" smallIcon="Xgq2Qo">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" androidArchitectures="armeabi armeabi-v7a x86" isDebug="1"
                        optimisation="1" targetName="AndroidSynth"/>
@@ -48,7 +49,7 @@
              androidKeyStorePass="android" androidKeyAlias="androiddebugkey"
              androidKeyAliasPass="android" androidCpp11="1" targetFolder="Builds/Android"
              androidSDKPath="" androidNDKPath="" androidMicNeeded="1" androidBluetoothNeeded="1"
-             androidTheme="@android:style/Theme.NoTitleBar">
+             androidTheme="@android:style/Theme.NoTitleBar" smallIcon="Xgq2Qo">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" androidArchitectures="armeabi armeabi-v7a x86" isDebug="1"
                        optimisation="1" targetName="AndroidSynth"/>
