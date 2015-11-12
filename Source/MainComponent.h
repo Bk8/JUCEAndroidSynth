@@ -23,7 +23,7 @@ public:
     MainContentComponent (AndroidSynthProcessor& androidSynth)
         :   synth (androidSynth),
             keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
-            recordButton ("Record"),
+            recordButton ("Record"), bluetoothButton ("Bluetooth"),
             roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
     {
         synth.addChangeListener (this);
@@ -35,6 +35,10 @@ public:
 
         recordButton.addListener (this);
         addAndMakeVisible (recordButton);
+
+        bluetoothButton.addListener (this);
+        addAndMakeVisible (bluetoothButton);
+        bluetoothButton.setEnabled (BluetoothMidiDevicePairingDialogue::isAvailable());
 
         roomSizeSlider.addListener (this);
         roomSizeSlider.setRange (0.0, 1.0);
@@ -80,6 +84,7 @@ public:
         int buttonHeight = guiElementAreaHeight - margin;
 
         recordButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
+        bluetoothButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
         roomSizeSlider.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
     }
 
@@ -90,7 +95,8 @@ public:
         {
             recordButton.setEnabled (false);
             synth.startRecording();
-        }
+        } else if (button == &bluetoothButton)
+            BluetoothMidiDevicePairingDialogue::open();
     }
 
     void sliderValueChanged (Slider*) override
