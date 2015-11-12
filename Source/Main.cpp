@@ -11,7 +11,8 @@
 #include "AndroidSynthProcessor.h"
 
 //==============================================================================
-class AndroidSynthApplication  : public  JUCEApplication
+class AndroidSynthApplication  : public  JUCEApplication,
+                                 private Timer
 {
 public:
     //==============================================================================
@@ -36,6 +37,8 @@ public:
         deviceManager->addMidiInputCallback (String(), &player);
 
         mainWindow = new MainWindow (synthProcessor, getApplicationName());
+
+        startTimer (1000);
     }
 
     void shutdown() override
@@ -91,9 +94,26 @@ public:
 
 private:
     //==============================================================================
+    void timerCallback() override
+    {
+        StringArray newDevices = MidiInput::getDevices();
+
+        for (int i = 0; i < lastMidiDevices.size(); ++i)
+            if (newDevices.indexOf (lastMidiDevices[i]) < 0)
+                deviceManager->setMidiInputEnabled (lastMidiDevices[i], false);
+
+        for (int i = 0; i < newDevices.size(); ++i)
+            if (lastMidiDevices.indexOf (newDevices[i]) < 0)
+                deviceManager->setMidiInputEnabled (newDevices[i], true);
+
+        lastMidiDevices = newDevices;
+    }
+
+    //==============================================================================
     AndroidSynthProcessor synthProcessor;
     AudioProcessorPlayer player;
     ScopedPointer<AudioDeviceManager> deviceManager;
+    StringArray lastMidiDevices;
 
     //==============================================================================
     ScopedPointer<MainWindow> mainWindow;
