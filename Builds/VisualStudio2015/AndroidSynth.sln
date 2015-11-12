@@ -1,0 +1,19 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2015
+Project("{5B581B93-C4B1-60FD-D6CD-7FDBB795956C}") = "AndroidSynth", "AndroidSynth.vcxproj", "{FA2101E1-5354-349C-0F3F-DC73E85C2C19}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA2101E1-5354-349C-0F3F-DC73E85C2C19}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FA2101E1-5354-349C-0F3F-DC73E85C2C19}.Debug|Win32.Build.0 = Debug|Win32
+		{FA2101E1-5354-349C-0F3F-DC73E85C2C19}.Release|Win32.ActiveCfg = Release|Win32
+		{FA2101E1-5354-349C-0F3F-DC73E85C2C19}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
