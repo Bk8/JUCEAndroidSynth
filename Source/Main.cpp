@@ -72,15 +72,18 @@ public:
 
            #if JUCE_ANDROID
             setFullScreen (true);
+            Desktop::getInstance().setScreenSaverEnabled (false);
            #else
             centreWithSize (getWidth(), getHeight());
            #endif
 
+            glContext.attachTo (*comp);
             setVisible (true);
         }
 
         ~MainWindow()
         {
+            glContext.detach();
         }
 
         void closeButtonPressed() override
@@ -89,6 +92,9 @@ public:
         }
 
     private:
+        OpenGLContext glContext;
+
+        //==============================================================================
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
