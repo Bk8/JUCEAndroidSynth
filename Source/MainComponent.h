@@ -109,7 +109,7 @@ private:
 
     //==========================================================================
     MidiKeyboardComponent keyboard;
-    TextButton recordButton, bluetoothButton;
+    TextButton recordButton;
     Slider roomSizeSlider;
     DrawablePath proAudioIcon;
 
