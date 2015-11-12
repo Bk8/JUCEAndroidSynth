@@ -8,12 +8,9 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "MainComponent.h"
-#include "AndroidSynthProcessor.h"
-#include "MaterialLookAndFeel.h"
 
 //==============================================================================
-class AndroidSynthApplication  : public  JUCEApplication,
-                                 private Timer
+class AndroidSynthApplication  : public  JUCEApplication
 {
 public:
     //==============================================================================
@@ -28,30 +25,11 @@ public:
     {
         ignoreUnused (commandLine);
 
-        Desktop::getInstance().setScreenSaverEnabled (false);
-        
-        player.setProcessor (&synthProcessor);
-
-        deviceManager = new AudioDeviceManager();
-        String err = deviceManager->initialiseWithDefaultDevices (1, 1);
-        jassert (err.isEmpty());
-
-        deviceManager->addAudioCallback (&player);
-        deviceManager->addMidiInputCallback (String(), &player);
-
-        LookAndFeel::setDefaultLookAndFeel (&materialLf);
-        mainWindow = new MainWindow (synthProcessor, getApplicationName(), isLowLatencyAudio());
-
-        startTimer (1000);
+        mainWindow = new MainWindow (getApplicationName());
     }
 
     void shutdown() override
     {
-        stopTimer ();
-
-        player.setProcessor (nullptr);
-
-        deviceManager = nullptr;
         mainWindow = nullptr;
     }
 
@@ -70,14 +48,14 @@ public:
     class MainWindow    : public DocumentWindow
     {
     public:
-        MainWindow (AndroidSynthProcessor& synth, String name, bool lowLatency)  : DocumentWindow (name,
-                                                                                                   LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
-                                                                                                   DocumentWindow::allButtons)
+        MainWindow (String name)  : DocumentWindow (name,
+                                                    LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
+                                                    DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
 
             setUsingNativeTitleBar (true);
-            setContentOwned (comp = new MainContentComponent (synth, lowLatency), true);
+            setContentOwned (comp = new MainContentComponent(), true);
 
            #if JUCE_ANDROID
             setFullScreen (true);
@@ -85,13 +63,11 @@ public:
             centreWithSize (getWidth(), getHeight());
            #endif
 
-            glContext.attachTo (*comp);
             setVisible (true);
         }
 
         ~MainWindow()
         {
-            glContext.detach();
         }
 
         void closeButtonPressed() override
@@ -100,53 +76,12 @@ public:
         }
 
     private:
-        OpenGLContext glContext;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
 private:
     //==============================================================================
-    void timerCallback() override
-    {
-        StringArray newDevices = MidiInput::getDevices();
-
-        for (int i = 0; i < lastMidiDevices.size(); ++i)
-            if (newDevices.indexOf (lastMidiDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (lastMidiDevices[i], false);
-
-        for (int i = 0; i < newDevices.size(); ++i)
-            if (lastMidiDevices.indexOf (newDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (newDevices[i], true);
-
-        lastMidiDevices = newDevices;
-    }
-
-    bool isLowLatencyAudio()
-    {
-        if (AudioIODevice* device = deviceManager->getCurrentAudioDevice())
-        {
-            Array<int> bufferSizes = device->getAvailableBufferSizes();
-
-            DefaultElementComparator <int> comparator;
-            bufferSizes.sort (comparator);
-
-            return (bufferSizes.size() > 0 && bufferSizes[0] == device->getDefaultBufferSize());
-        }
-
-        return false;
-    }
-
-    //==============================================================================
-    AndroidSynthProcessor synthProcessor;
-    AudioProcessorPlayer player;
-    ScopedPointer<AudioDeviceManager> deviceManager;
-
-    //==============================================================================
-    MaterialLookAndFeel materialLf;
     ScopedPointer<MainWindow> mainWindow;
-
-    //==============================================================================
-    StringArray lastMidiDevices;
 };
 
 //==============================================================================

@@ -10,7 +10,6 @@
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "AndroidSynthProcessor.h"
 
 //==============================================================================
 class MainContentComponent   : public Component,
@@ -20,15 +19,11 @@ class MainContentComponent   : public Component,
 {
 public:
     //==========================================================================
-    MainContentComponent (AndroidSynthProcessor& androidSynth, bool lowLatencyAudio)
-        : synth (androidSynth),
-          keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+    MainContentComponent ()
+        : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
           recordButton ("Record"),
-          bluetoothButton ("Bluetooth MIDI"),
           roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
     {
-        synth.addChangeListener (this);
-
         keyboard.setLowestVisibleKey (0x30);
         keyboard.setKeyWidth (600/0x10);
         addAndMakeVisible (keyboard);
@@ -38,21 +33,14 @@ public:
 
         roomSizeSlider.addListener (this);
         roomSizeSlider.setRange (0.0, 1.0);
-        roomSizeSlider.setValue (synth.reverbParameters.roomSize, NotificationType::dontSendNotification);
         addAndMakeVisible (roomSizeSlider);
-
-        if (! BluetoothMidiDevicePairingDialogue::isAvailable())
-            bluetoothButton.setEnabled (false);
-
-        bluetoothButton.addListener (this);
-        addAndMakeVisible (bluetoothButton);
 
         Path proAudioPath;
         proAudioPath.loadPathFromData (BinaryData::proaudio_path, BinaryData::proaudio_pathSize);
         proAudioIcon.setPath (proAudioPath);
         addAndMakeVisible (proAudioIcon);
 
-        Colour proAudioIconColour = findColour (lowLatencyAudio ? TextButton::buttonOnColourId : TextButton::buttonColourId);
+        Colour proAudioIconColour = findColour (TextButton::buttonColourId);
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);
@@ -60,7 +48,6 @@ public:
 
     ~MainContentComponent()
     {
-        synth.removeChangeListener (this);
     }
 
     //==========================================================================
@@ -87,7 +74,6 @@ public:
         int buttonHeight = guiElementAreaHeight - margin;
 
         recordButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
-        bluetoothButton.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
         roomSizeSlider.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
     }
 
@@ -96,27 +82,21 @@ public:
     {
         if (button == &recordButton)
         {
-            recordButton.setEnabled (false);
-            synth.startRecording();
+            // ....
         }
-        else if (button == &bluetoothButton)
-            BluetoothMidiDevicePairingDialogue::open();
     }
 
     void sliderValueChanged (Slider*) override
     {
-        synth.reverbParameters.roomSize = static_cast<float> (roomSizeSlider.getValue());
     }
 
     //==========================================================================
     void changeListenerCallback (ChangeBroadcaster*) override
     {
-        recordButton.setEnabled (! synth.isRecording);
     }
 private:
     //==========================================================================
-    AndroidSynthProcessor& synth;
-
+    MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboard;
     TextButton recordButton, bluetoothButton;
     Slider roomSizeSlider;
