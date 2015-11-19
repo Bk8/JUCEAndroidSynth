@@ -91,7 +91,7 @@ public:
 
     void sliderValueChanged (Slider*) override
     {
-        setParameterValue ("roomSize", roomSizeSlider.getValue());
+        setParameterValue ("roomSize", static_cast<float> (roomSizeSlider.getValue()));
     }
 
 private:
