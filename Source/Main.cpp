@@ -28,18 +28,17 @@ public:
     {
         ignoreUnused (commandLine);
 
-        LookAndFeel::setDefaultLookAndFeel (&materialLf);
+        LookAndFeel::setDefaultLookAndFeel (&materialLookAndFeel);
 
         player.setProcessor (&synthProcessor);
 
-        deviceManager = new AudioDeviceManager();
-        String err = deviceManager->initialiseWithDefaultDevices (1, 1);
+        String err = deviceManager.initialiseWithDefaultDevices (1, 1);
         jassert (err.isEmpty());
 
-        deviceManager->addAudioCallback (&player);
-        deviceManager->addMidiInputCallback (String(), &player);
+        deviceManager.addAudioCallback (&player);
+        deviceManager.addMidiInputCallback (String(), &player);
 
-        mainWindow = new MainWindow (synthProcessor, isLowLatencyAudio(), getApplicationName());
+        mainWindow = new MainWindow (player, isLowLatencyAudio(), getApplicationName());
 
         startTimer (1000);
     }
@@ -47,6 +46,11 @@ public:
     void shutdown() override
     {
         mainWindow = nullptr;
+
+        deviceManager.removeMidiInputCallback (String(), &player);
+        deviceManager.removeAudioCallback (&player);
+
+        player.setProcessor (nullptr);
     }
 
     //==============================================================================
@@ -64,14 +68,14 @@ public:
     class MainWindow    : public DocumentWindow
     {
     public:
-        MainWindow (AndroidSynthProcessor& synth, bool lowLatency, String name)  : DocumentWindow (name,
+        MainWindow (AudioProcessorPlayer& player, bool lowLatency, String name)  : DocumentWindow (name,
                                                     LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
                                                     DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
 
             setUsingNativeTitleBar (true);
-            setContentOwned (comp = new MainContentComponent (synth, lowLatency), true);
+            setContentOwned (comp = new MainContentComponent (player, lowLatency), true);
 
            #if JUCE_ANDROID
             setFullScreen (true);
@@ -109,18 +113,18 @@ private:
 
         for (int i = 0; i < lastMidiDevices.size(); ++i)
             if (newDevices.indexOf (lastMidiDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (lastMidiDevices[i], false);
+                deviceManager.setMidiInputEnabled (lastMidiDevices[i], false);
 
         for (int i = 0; i < newDevices.size(); ++i)
             if (lastMidiDevices.indexOf (newDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (newDevices[i], true);
+                deviceManager.setMidiInputEnabled (newDevices[i], true);
 
         lastMidiDevices = newDevices;
     }
 
     bool isLowLatencyAudio()
     {
-        if (AudioIODevice* device = deviceManager->getCurrentAudioDevice())
+        if (AudioIODevice* device = deviceManager.getCurrentAudioDevice())
         {
             Array<int> bufferSizes = device->getAvailableBufferSizes();
 
@@ -134,13 +138,15 @@ private:
     }
 
     //==============================================================================
+    MaterialLookAndFeel materialLookAndFeel;
+
+    //==============================================================================
     AndroidSynthProcessor synthProcessor;
     AudioProcessorPlayer player;
-    ScopedPointer<AudioDeviceManager> deviceManager;
+    AudioDeviceManager deviceManager;
     StringArray lastMidiDevices;
 
     //==============================================================================
-    MaterialLookAndFeel materialLf;
     ScopedPointer<MainWindow> mainWindow;
 };
 
