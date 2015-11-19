@@ -53,7 +53,7 @@ public:
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);
-        startTimer (500);
+        startTimer (100);
     }
 
     //==========================================================================
