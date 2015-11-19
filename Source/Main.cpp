@@ -29,14 +29,13 @@ public:
 
         player.setProcessor (&synthProcessor);
 
-        deviceManager = new AudioDeviceManager();
-        String err = deviceManager->initialiseWithDefaultDevices (1, 1);
+        String err = deviceManager.initialiseWithDefaultDevices (1, 1);
         jassert (err.isEmpty());
 
-        deviceManager->addAudioCallback (&player);
-        deviceManager->addMidiInputCallback (String(), &player);
+        deviceManager.addAudioCallback (&player);
+        deviceManager.addMidiInputCallback (String(), &player);
 
-        mainWindow = new MainWindow (synthProcessor, getApplicationName());
+        mainWindow = new MainWindow (player, getApplicationName());
 
         startTimer (1000);
     }
@@ -44,6 +43,11 @@ public:
     void shutdown() override
     {
         mainWindow = nullptr;
+
+        deviceManager.removeMidiInputCallback (String(), &player);
+        deviceManager.removeAudioCallback (&player);
+
+        player.setProcessor (nullptr);
     }
 
     //==============================================================================
@@ -61,14 +65,15 @@ public:
     class MainWindow    : public DocumentWindow
     {
     public:
-        MainWindow (AndroidSynthProcessor& synth, String name)  : DocumentWindow (name,
-                                                    LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
-                                                    DocumentWindow::allButtons)
+        MainWindow (AudioProcessorPlayer& player, String name)  : DocumentWindow (name,
+                                                                                 LookAndFeel::getDefaultLookAndFeel().
+                                                                                 findColour (ResizableWindow::backgroundColourId),
+                                                                                 DocumentWindow::allButtons)
         {
             MainContentComponent* comp;
 
             setUsingNativeTitleBar (true);
-            setContentOwned (comp = new MainContentComponent (synth), true);
+            setContentOwned (comp = new MainContentComponent (player), true);
 
            #if JUCE_ANDROID
             setFullScreen (true);
@@ -100,11 +105,11 @@ private:
 
         for (int i = 0; i < lastMidiDevices.size(); ++i)
             if (newDevices.indexOf (lastMidiDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (lastMidiDevices[i], false);
+                deviceManager.setMidiInputEnabled (lastMidiDevices[i], false);
 
         for (int i = 0; i < newDevices.size(); ++i)
             if (lastMidiDevices.indexOf (newDevices[i]) < 0)
-                deviceManager->setMidiInputEnabled (newDevices[i], true);
+                deviceManager.setMidiInputEnabled (newDevices[i], true);
 
         lastMidiDevices = newDevices;
     }
@@ -112,7 +117,7 @@ private:
     //==============================================================================
     AndroidSynthProcessor synthProcessor;
     AudioProcessorPlayer player;
-    ScopedPointer<AudioDeviceManager> deviceManager;
+    AudioDeviceManager deviceManager;
     StringArray lastMidiDevices;
 
     //==============================================================================
