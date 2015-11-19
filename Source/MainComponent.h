@@ -13,17 +13,22 @@
 
 //==============================================================================
 class MainContentComponent   : public Component,
-                               public ChangeListener,
                                public ButtonListener,
-                               public Slider::Listener
+                               public Slider::Listener,
+                               private Timer
 {
 public:
     //==========================================================================
-    MainContentComponent ()
-        : keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
-          recordButton ("Record"),
-          roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
+    MainContentComponent (AudioProcessorPlayer& processorPlayer)
+        :   player (processorPlayer),
+            keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+            recordButton ("Record"),
+            roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
     {
+        keyboardState.addListener (&processorPlayer.getMidiMessageCollector());
+
+        roomSizeSlider.setValue (getParameterValue ("roomSize"), NotificationType::dontSendNotification);
+
         keyboard.setLowestVisibleKey (0x30);
         keyboard.setKeyWidth (600/0x10);
         addAndMakeVisible (keyboard);
@@ -44,10 +49,7 @@ public:
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);
-    }
-
-    ~MainContentComponent()
-    {
+        startTimer (100);
     }
 
     //==========================================================================
@@ -82,19 +84,64 @@ public:
     {
         if (button == &recordButton)
         {
-            // ....
+            recordButton.setEnabled (false);
+            setParameterValue ("isRecording", 1.0f);
         }
     }
 
     void sliderValueChanged (Slider*) override
     {
+        setParameterValue ("roomSize", roomSizeSlider.getValue());
+    }
+
+private:
+    //==========================================================================
+    void timerCallback() override
+    {
+        bool isRecordingNow = (getParameterValue ("isRecording") >= 0.5f);
+
+        recordButton.setEnabled (! isRecordingNow);
+        roomSizeSlider.setValue (getParameterValue ("roomSize"), NotificationType::dontSendNotification);
     }
 
     //==========================================================================
-    void changeListenerCallback (ChangeBroadcaster*) override
+    AudioProcessorParameter* getParameter (const String& paramId)
     {
+        if (AudioProcessor* processor = player.getCurrentProcessor())
+        {
+            const OwnedArray<AudioProcessorParameter>& params = processor->getParameters();
+
+            for (int i = 0; i < params.size(); ++i)
+            {
+                if (AudioProcessorParameterWithID* param = dynamic_cast<AudioProcessorParameterWithID*> (params[i]))
+                {
+                    if (param->paramID == paramId)
+                        return param;
+                }
+            }
+        }
+
+        return nullptr;
     }
-private:
+
+    //==========================================================================
+    float getParameterValue (const String& paramId)
+    {
+        if (AudioProcessorParameter* param = getParameter (paramId))
+            return param->getValue();
+
+        return 0.0f;
+    }
+
+    void setParameterValue (const String& paramId, float value)
+    {
+        if (AudioProcessorParameter* param = getParameter (paramId))
+            param->setValueNotifyingHost (value);
+    }
+
+    //==========================================================================
+    AudioProcessorPlayer& player;
+
     //==========================================================================
     MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboard;
