@@ -19,7 +19,7 @@ class MainContentComponent   : public Component,
 {
 public:
     //==========================================================================
-    MainContentComponent (AudioProcessorPlayer& processorPlayer)
+    MainContentComponent (AudioProcessorPlayer& processorPlayer, bool isLowLatency)
         :   player (processorPlayer),
             keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
             recordButton ("Record"), bluetoothButton ("Bluetooth"),
@@ -49,7 +49,7 @@ public:
         proAudioIcon.setPath (proAudioPath);
         addAndMakeVisible (proAudioIcon);
 
-        Colour proAudioIconColour = findColour (TextButton::buttonColourId);
+        Colour proAudioIconColour = findColour (isLowLatency ? TextButton::buttonOnColourId : TextButton::buttonColourId);
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);
