@@ -100,6 +100,21 @@ private:
     AndroidSynthProcessor synthProcessor;
     AudioProcessorPlayer player;
 
+    bool isLowLatencyAudio()
+    {
+        if (AudioIODevice* device = deviceManager.getCurrentAudioDevice())
+        {
+            Array<int> bufferSizes = device->getAvailableBufferSizes();
+
+            DefaultElementComparator <int> comparator;
+            bufferSizes.sort (comparator);
+
+            return (bufferSizes.size() > 0 && bufferSizes[0] == device->getDefaultBufferSize());
+        }
+
+        return false;
+    }
+
     //==============================================================================
     ScopedPointer<MainWindow> mainWindow;
 };
