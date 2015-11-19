@@ -10,24 +10,24 @@
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "AndroidSynthProcessor.h"
 
 //==============================================================================
 class MainContentComponent   : public Component,
-                               public ChangeListener,
                                public ButtonListener,
-                               public Slider::Listener
+                               public Slider::Listener,
+                               private Timer
 {
 public:
     //==========================================================================
-    MainContentComponent (AndroidSynthProcessor& androidSynth, bool lowLatency)
-        :   synth (androidSynth),
-            keyboard (synth.keyboardState, MidiKeyboardComponent::horizontalKeyboard),
+    MainContentComponent (AudioProcessorPlayer& processorPlayer, bool lowLatency)
+        :   player (processorPlayer),
+            keyboard (keyboardState, MidiKeyboardComponent::horizontalKeyboard),
             recordButton ("Record"), bluetoothButton ("Bluetooth"),
             roomSizeSlider (Slider::LinearHorizontal, Slider::NoTextBox)
     {
-        synth.addChangeListener (this);
-        roomSizeSlider.setValue (synth.reverbParameters.roomSize, NotificationType::dontSendNotification);
+        keyboardState.addListener (&processorPlayer.getMidiMessageCollector());
+
+        roomSizeSlider.setValue (getParameterValue ("roomSize"), NotificationType::dontSendNotification);
 
         keyboard.setLowestVisibleKey (0x30);
         keyboard.setKeyWidth (600/0x10);
@@ -53,11 +53,7 @@ public:
         proAudioIcon.setFill (FillType (proAudioIconColour));
 
         setSize (600, 400);
-    }
-
-    ~MainContentComponent()
-    {
-        synth.removeChangeListener (this);
+        startTimer (500);
     }
 
     //==========================================================================
@@ -94,26 +90,69 @@ public:
         if (button == &recordButton)
         {
             recordButton.setEnabled (false);
-            synth.startRecording();
-        } else if (button == &bluetoothButton)
+            setParameterValue ("isRecording", 1.0f);
+        }
+        else if (button == &bluetoothButton)
+        {
             BluetoothMidiDevicePairingDialogue::open();
+        }
     }
 
     void sliderValueChanged (Slider*) override
     {
-        synth.reverbParameters.roomSize = roomSizeSlider.getValue();
+        setParameterValue ("roomSize", roomSizeSlider.getValue());
     }
 
-    //==========================================================================
-    void changeListenerCallback (ChangeBroadcaster*) override
-    {
-        recordButton.setEnabled (! synth.isRecording);
-    }
 private:
     //==========================================================================
-    AndroidSynthProcessor& synth;
+    void timerCallback() override
+    {
+        bool isRecordingNow = (getParameterValue ("isRecording") >= 0.5f);
+
+        recordButton.setEnabled (! isRecordingNow);
+        roomSizeSlider.setValue (getParameterValue ("roomSize"), NotificationType::dontSendNotification);
+    }
 
     //==========================================================================
+    AudioProcessorParameter* getParameter (const String& paramId)
+    {
+        if (AudioProcessor* processor = player.getCurrentProcessor())
+        {
+            const OwnedArray<AudioProcessorParameter>& params = processor->getParameters();
+
+            for (int i = 0; i < params.size(); ++i)
+            {
+                if (AudioProcessorParameterWithID* param = dynamic_cast<AudioProcessorParameterWithID*> (params[i]))
+                {
+                    if (param->paramID == paramId)
+                        return param;
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
+    //==========================================================================
+    float getParameterValue (const String& paramId)
+    {
+        if (AudioProcessorParameter* param = getParameter (paramId))
+            return param->getValue();
+
+        return 0.0f;
+    }
+
+    void setParameterValue (const String& paramId, float value)
+    {
+        if (AudioProcessorParameter* param = getParameter (paramId))
+            param->setValueNotifyingHost (value);
+    }
+
+    //==========================================================================
+    AudioProcessorPlayer& player;
+
+    //==========================================================================
+    MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboard;
     TextButton recordButton, bluetoothButton;
     Slider roomSizeSlider;

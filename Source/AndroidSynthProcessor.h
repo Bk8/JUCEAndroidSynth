@@ -11,14 +11,16 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-class AndroidSynthProcessor : public AudioProcessor,
-                              public ChangeBroadcaster
+class AndroidSynthProcessor : public AudioProcessor
 {
 public:
     AndroidSynthProcessor ()
-        : isRecording (false),
-          currentRecording (1, 1)
+        : currentRecording (1, 1)
     {
+        // initialize parameters
+        addParameter (isRecordingParam = new AudioParameterBool ("isRecording", "Is Recording", false));
+        addParameter (roomSizeParam = new AudioParameterFloat ("roomSize", "Room Size", 0.0f, 1.0f, 0.5f));
+
         formatManager.registerBasicFormats();
 
         for (int i = 0; i < maxNumVoices; ++i)
@@ -28,52 +30,43 @@ public:
     }
 
     //==============================================================================
-    void startRecording ()
-    {
-        if (! isRecording)
-        {
-            samplesRecorded = 0;
-            isRecording = true;
-            currentRecording.clear();
-
-            sendSynchronousChangeMessage();
-        }
-    }
-
-    //==============================================================================
     void prepareToPlay (double sampleRate, int estimatedMaxSizeOfBuffer) override
     {
         ignoreUnused (estimatedMaxSizeOfBuffer);
 
         lastSampleRate = sampleRate;
+
         currentRecording.setSize (1, static_cast<int> (std::ceil (kMaxDurationOfRecording * lastSampleRate)));
+        samplesRecorded = 0;
+
         synth.setCurrentPlaybackSampleRate (lastSampleRate);
         reverb.setSampleRate (lastSampleRate);
     }
 
     void processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages) override
     {
-        if (isRecording)
+        if (isRecordingParam->get())
         {
             int len = std::min (currentRecording.getNumSamples() - samplesRecorded, buffer.getNumSamples());
             currentRecording.copyFrom (0, samplesRecorded, buffer.getReadPointer (0), len, 1.0f);
             samplesRecorded += len;
             if (samplesRecorded >= currentRecording.getNumSamples())
             {
-                isRecording = false;
-                sendChangeMessage();
+                samplesRecorded = 0;
+                isRecordingParam->setValueNotifyingHost (0.0f);
                 MessageManager::callAsync ([this] { swapSamples(); });
             }
         }
 
-        keyboardState.processNextMidiBuffer (midiMessages, 0, buffer.getNumSamples(), true);
         buffer.clear();
+
+        Reverb::Parameters reverbParameters;
+        reverbParameters.roomSize = roomSizeParam->get();
 
         reverb.setParameters (reverbParameters);
         synth.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
         reverb.processMono (buffer.getWritePointer (0), buffer.getNumSamples());
     }
-
 
     //==============================================================================
     void releaseResources() override                                            { currentRecording.setSize (1, 1); }
@@ -105,12 +98,6 @@ public:
     void changeProgramName (int /*index*/, const String& /*name*/) override     {}
     void getStateInformation (MemoryBlock&) override                            {}
     void setStateInformation (const void*, int) override                        {}
-
-    //==============================================================================
-    bool isRecording;
-    Reverb::Parameters reverbParameters;
-    MidiKeyboardState keyboardState;
-
 private:
     //==============================================================================
     void loadNewSample (const void* data, int dataSize, const char* format)
@@ -158,6 +145,8 @@ private:
     Synthesiser synth;
     SynthesiserSound::Ptr sound;
 
+    AudioParameterBool* isRecordingParam;
+    AudioParameterFloat* roomSizeParam;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AndroidSynthProcessor)
 };
